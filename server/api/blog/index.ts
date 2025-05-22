@@ -1,21 +1,62 @@
 import prisma from '../../utils/prisma'
-import { writeFile } from 'fs/promises'
-import { join } from 'path'
+import type { BlogPost } from '@prisma/client'
 
-interface UploadedFile {
-  type?: string
-  filename?: string
-  data: Buffer
-}
-
-interface FormField {
+interface FormData {
   name?: string
   type?: string
   filename?: string
   data: Buffer
 }
 
+interface BlogPostInput {
+  title: string
+  description?: string
+  image?: string
+  date: Date
+  slug: string
+  body: string
+}
+
 export default defineEventHandler(async (event) => {
+  const readFormData = async (data: FormData[]) => {
+    const result = {
+      title: '',
+      description: '',
+      date: new Date(),
+      slug: '',
+      body: '',
+      image: undefined as string | undefined
+    }
+    let imageFile: FormData | null = null
+
+    for (const field of data) {
+      if (field.name === 'image' && field.type?.startsWith('image/')) {
+        imageFile = field
+      } else if (field.name) {
+        const value = field.data.toString()
+        switch (field.name) {
+          case 'title':
+            result.title = value
+            break
+          case 'description':
+            result.description = value
+            break
+          case 'date':
+            result.date = new Date(value)
+            break
+          case 'slug':
+            result.slug = value
+            break
+          case 'body':
+            result.body = value
+            break
+        }
+      }
+    }
+
+    return { result, imageFile }
+  }
+
   // GET: List all blog posts
   if (event.method === 'GET') {
     try {
@@ -39,29 +80,16 @@ export default defineEventHandler(async (event) => {
         throw new Error('No form data received')
       }
 
-      const postData: any = {}
-      let imageFile: UploadedFile | null = null
-
-      // Process form data
-      formData.forEach((field: FormField) => {
-        if (field.type?.startsWith('image/')) {
-          imageFile = field
-        } else if (field.name) {
-          if (field.name === 'date') {
-            postData[field.name] = new Date(field.data.toString())
-          } else {
-            postData[field.name] = field.data.toString()
-          }
-        }
-      })
+      const { result: postData, imageFile } = await readFormData(formData)
 
       // Handle image upload if present
       if (imageFile) {
-        const ext = imageFile.filename?.split('.').pop() || 'jpg'
-        const fileName = `blog-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`
-        const filePath = join('public/img', fileName)
-        await writeFile(filePath, imageFile.data)
-        postData.image = `/img/${fileName}`
+        // Check file size (1MB)
+        if (imageFile.data.length > 1024 * 1024) {
+          throw new Error('Image file must be less than 1MB')
+        }
+        // Convert to base64
+        postData.image = `data:${imageFile.type};base64,${Buffer.from(imageFile.data).toString('base64')}`
       }
 
       // Required fields validation
@@ -91,29 +119,16 @@ export default defineEventHandler(async (event) => {
         throw new Error('No form data received')
       }
 
-      const postData: any = {}
-      let imageFile: UploadedFile | null = null
-
-      // Process form data
-      formData.forEach((field: FormField) => {
-        if (field.type?.startsWith('image/')) {
-          imageFile = field
-        } else if (field.name) {
-          if (field.name === 'date') {
-            postData[field.name] = new Date(field.data.toString())
-          } else {
-            postData[field.name] = field.data.toString()
-          }
-        }
-      })
+      const { result: postData, imageFile } = await readFormData(formData)
 
       // Handle image upload if present
       if (imageFile) {
-        const ext = imageFile.filename?.split('.').pop() || 'jpg'
-        const fileName = `blog-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`
-        const filePath = join('public/img', fileName)
-        await writeFile(filePath, imageFile.data)
-        postData.image = `/img/${fileName}`
+        // Check file size (1MB)
+        if (imageFile.data.length > 1024 * 1024) {
+          throw new Error('Image file must be less than 1MB')
+        }
+        // Convert to base64
+        postData.image = `data:${imageFile.type};base64,${Buffer.from(imageFile.data).toString('base64')}`
       }
 
       if (!postData.slug) {

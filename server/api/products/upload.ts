@@ -1,6 +1,3 @@
-import { writeFile } from 'fs/promises'
-import { join } from 'path'
-
 export default defineEventHandler(async (event) => {
   try {
     const formData = await readMultipartFormData(event)
@@ -12,14 +9,19 @@ export default defineEventHandler(async (event) => {
     }
 
     const file = formData[0]
-    const ext = file.filename?.split('.').pop() || 'jpg'
-    const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`
-    const filePath = join('public/img', fileName)
+    // Check file size (1MB = 1024 * 1024 bytes)
+    if (file.data.length > 1024 * 1024) {
+      throw createError({
+        statusCode: 400,
+        message: 'File size must be less than 1MB'
+      })
+    }
 
-    await writeFile(filePath, file.data)
+    // Convert to base64
+    const base64String = `data:${file.type};base64,${Buffer.from(file.data).toString('base64')}`
 
     return {
-      url: `/img/${fileName}`
+      url: base64String
     }
   } catch (error: any) {
     throw createError({

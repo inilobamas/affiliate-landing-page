@@ -255,6 +255,13 @@ async function handleImageUpload(event) {
   const file = event.target.files[0]
   if (!file) return
 
+  const maxSize = 1024 * 1024 // 1MB
+  if (file.size > maxSize) {
+    showMessage('Image file must be less than 1MB', true)
+    event.target.value = ''
+    return
+  }
+
   const formData = new FormData()
   formData.append('image', file)
   formData.append('title', form.value.title)
@@ -273,12 +280,15 @@ async function handleImageUpload(event) {
       body: formData
     })
 
+    if (!response.ok) {
+      throw new Error('Upload failed')
+    }
+
     const result = await response.json()
     if (result.image) {
       form.value.image = result.image
+      showMessage('Image uploaded successfully')
     }
-    
-    showMessage('Image uploaded successfully')
   } catch (error) {
     showMessage('Error uploading image', true)
   }

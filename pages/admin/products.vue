@@ -266,7 +266,13 @@ async function handleImageUpload(event) {
   const files = event.target.files
   if (!files.length) return
 
+  const maxSize = 1024 * 1024 // 1MB
   for (const file of Array.from(files)) {
+    if (file.size > maxSize) {
+      showMessage(`File ${file.name} is larger than 1MB`, true)
+      continue
+    }
+
     const formData = new FormData()
     formData.append('image', file)
 
