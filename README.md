@@ -87,13 +87,33 @@ npm run db:push
 npm run db:migrate
 ```
 
-## Production
+## Deployment
 
-Build the application for production:
+### Vercel Deployment
+
+To deploy this application on Vercel, you need to configure the build settings to ensure Prisma Client is properly generated:
+
+1. In your Vercel project settings, add the following Build Command:
+```bash
+npm run build && npx prisma generate
+```
+
+2. Add the following environment variables in your Vercel project settings:
+- `DATABASE_URL`: Your database connection string
+- Other environment variables if required by your application
+
+3. If using SQLite, ensure your database is properly configured for production use, as Vercel's filesystem is read-only. Consider using a hosted database service instead.
+
+### Local Production Build
+
+To build and preview the application locally:
 
 ```bash
 # Build
 npm run build
+
+# Generate Prisma Client (important for production)
+npx prisma generate
 
 # Preview production build
 npm run preview
