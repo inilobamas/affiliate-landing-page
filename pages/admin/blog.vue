@@ -262,21 +262,13 @@ async function handleImageUpload(event) {
     return
   }
 
+  // Only handle image upload
   const formData = new FormData()
   formData.append('image', file)
-  formData.append('title', form.value.title)
-  formData.append('description', form.value.description)
-  formData.append('date', form.value.date)
-  formData.append('slug', form.value.slug)
-  formData.append('body', form.value.body)
-
-  if (editingPost.value) {
-    formData.append('id', editingPost.value.id.toString())
-  }
 
   try {
-    const response = await fetch('/api/blog', {
-      method: editingPost.value ? 'PUT' : 'POST',
+    const response = await fetch('/api/blog/upload', {
+      method: 'POST',
       body: formData
     })
 
@@ -312,8 +304,16 @@ async function savePost() {
     formData.append('slug', form.value.slug)
     formData.append('body', form.value.body)
     
+    // Handle image data
     if (form.value.image) {
-      formData.append('image', form.value.image)
+      // Check if it's a base64 string
+      if (form.value.image.startsWith('data:image')) {
+        // Send base64 image as is
+        formData.append('imageData', form.value.image)
+      } else {
+        // If not base64, assume it's a file path
+        formData.append('image', form.value.image)
+      }
     }
 
     const response = await fetch('/api/blog', {

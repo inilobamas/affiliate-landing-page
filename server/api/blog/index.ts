@@ -82,14 +82,18 @@ export default defineEventHandler(async (event) => {
 
       const { result: postData, imageFile } = await readFormData(formData)
 
-      // Handle image upload if present
-      if (imageFile) {
-        // Check file size (1MB)
-        if (imageFile.data.length > 1024 * 1024) {
-          throw new Error('Image file must be less than 1MB')
+      // Handle image data
+      for (const field of formData) {
+        if (field.name === 'imageData' && typeof field.data === 'string') {
+          // If imageData is provided (base64 string), use it directly
+          postData.image = field.data
+        } else if (field.name === 'image' && field.type?.startsWith('image/')) {
+          // If it's a file upload
+          if (field.data.length > 1024 * 1024) {
+            throw new Error('Image file must be less than 1MB')
+          }
+          postData.image = `data:${field.type};base64,${Buffer.from(field.data).toString('base64')}`
         }
-        // Convert to base64
-        postData.image = `data:${imageFile.type};base64,${Buffer.from(imageFile.data).toString('base64')}`
       }
 
       // Required fields validation
@@ -121,14 +125,18 @@ export default defineEventHandler(async (event) => {
 
       const { result: postData, imageFile } = await readFormData(formData)
 
-      // Handle image upload if present
-      if (imageFile) {
-        // Check file size (1MB)
-        if (imageFile.data.length > 1024 * 1024) {
-          throw new Error('Image file must be less than 1MB')
+      // Handle image data
+      for (const field of formData) {
+        if (field.name === 'imageData' && typeof field.data === 'string') {
+          // If imageData is provided (base64 string), use it directly
+          postData.image = field.data
+        } else if (field.name === 'image' && field.type?.startsWith('image/')) {
+          // If it's a file upload
+          if (field.data.length > 1024 * 1024) {
+            throw new Error('Image file must be less than 1MB')
+          }
+          postData.image = `data:${field.type};base64,${Buffer.from(field.data).toString('base64')}`
         }
-        // Convert to base64
-        postData.image = `data:${imageFile.type};base64,${Buffer.from(imageFile.data).toString('base64')}`
       }
 
       if (!postData.slug) {
